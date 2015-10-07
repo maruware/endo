@@ -9,7 +9,7 @@ module Endo
     def exec(endo_file=nil)
       executor = Endo::Core.new
       if endo_file.nil?
-        Dir.glob('endoes/*.endo').each do |f|
+        Dir.glob('endo/*.endo').each do |f|
           executor.instance_eval File.read(f)
         end
       else
