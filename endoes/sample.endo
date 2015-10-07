@@ -1,0 +1,12 @@
+set :base_url, 'http://private-c15a0-endosample.apiary-mock.com'
+
+get '/questions'
+
+get '/questions/:question_id' do
+  param 'question_id' do
+    from :get, '/questions' do |questions|
+      questions.first[:id]
+    end
+  end
+end
+

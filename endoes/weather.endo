@@ -1,5 +1,0 @@
-set :base_url, 'http://api.openweathermap.org/data/2.5'
-
-get '/weather' do
-	param 'q', 'Tokyo,jp'
-end
