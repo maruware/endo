@@ -24,7 +24,7 @@ module Endo
 
     #TODO: 制限
     def param(key, val=nil, &block)
-      if (!val.nil?) && (!block.nil?) # Only either one
+      unless (!val.nil?) ^ (!block.nil?) # Only either one
         raise ArgumentError.new('DupValue')
       end
 
