@@ -37,7 +37,8 @@ module Endo
     end
 
     #TODO: Limit scope
-    def from(key, &block)
+    def from(method, endpoint, &block)
+      key = build_response_key(method, endpoint)
       unless @responses.has_key? key
         raise RuntimeError.new("NotFoundKey [#{key}]")
       end
@@ -70,7 +71,7 @@ module Endo
       res = http_request_json(url, @params, method: method)
       t_end = Time.now.instance_eval { self.to_i * 1000 + (usec/1000) }
 
-      @responses[org_endpoint] = res
+      @responses[build_response_key(method, org_endpoint)] = res
 
       puts "🍺 #{org_endpoint} [#{t_end-t_start}ms]"
     end
@@ -116,6 +117,10 @@ module Endo
       raise RuntimeError.new("HTTP Bad Status[#{res.code}] #{res.body}") unless /^20[0-8]$/ =~ res.code
 
       return res.body
+    end
+
+    def build_response_key(method, endpoint)
+      "#{method}:#{endpoint}"
     end
 
   end
