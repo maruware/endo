@@ -114,7 +114,7 @@ module Endo
       end
 
       res = Net::HTTP.start(uri.host, uri.port) {|http| http.request req }
-      raise RuntimeError.new("HTTP Bad Status[#{res.code}] #{res.body}") unless /^20[0-8]$/ =~ res.code
+      raise Error::HttpError.new("HTTP Bad Status[#{res.code}] #{res.body}", res.code, res.body) unless /^20[0-8]$/ =~ res.code
 
       return res.body
     end
