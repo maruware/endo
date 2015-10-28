@@ -63,33 +63,39 @@ module Endo
       @params = {}
       block.call if block
 
-      endpoint = apply_pattern_vars(endpoint)
+      endpoint = apply_pattern_vars(endpoint, @params)
 
       url = @props[:base_url] + endpoint
 
-      t_start = Time.now.instance_eval { self.to_i * 1000 + (usec/1000) }
-      res = http_request_json(url, @params, method: method)
-      t_end = Time.now.instance_eval { self.to_i * 1000 + (usec/1000) }
+      message = begin
+        t_start = Time.now.instance_eval { self.to_i * 1000 + (usec/1000) }
+        res = http_request_json(url, @params, method: method)
+        t_end = Time.now.instance_eval { self.to_i * 1000 + (usec/1000) }
 
-      @responses[build_response_key(method, org_endpoint)] = res
+        @responses[build_response_key(method, endpoint)] = res
+        "🍺 #{endpoint} [#{t_end-t_start}ms]"
+      rescue Error::HttpError=>e
+        "💩 #{endpoint} [code: #{e.code}]"
+      end
 
-      puts "🍺 #{org_endpoint} [#{t_end-t_start}ms]"
+
+      puts message
     end
 
-    def apply_pattern_vars(endpoint)
+    def apply_pattern_vars(endpoint, params)
       patterns = endpoint.scan(/:(\w+)/)
       if patterns.any?
         patterns.flatten!
         patterns.each do |pattern|
-          unless @params.has_key? pattern
-            raise RuntimeError.new('NotFound')
+          unless params.has_key? pattern
+            raise RuntimeError.new("NotFoundPattern #{pattern}")
           end
 
-          endpoint.sub!(/:#{pattern}/, @params[pattern].to_s)
+          endpoint.sub!(/:#{pattern}/, params[pattern].to_s)
         end
 
         patterns.uniq.each do |pattern|
-          @params.delete(pattern)
+          params.delete(pattern)
         end
       end
       endpoint
