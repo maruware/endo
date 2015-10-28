@@ -1,12 +1,16 @@
-set :base_url, 'http://private-c15a0-endosample.apiary-mock.com'
+set :base_url, 'http://endo-sample.maruware.com'
 
-get '/questions'
+get '/articles'
 
-get '/questions/:question_id' do
-  param 'question_id' do
-    from :get, '/questions' do |questions|
-      questions.first[:id]
+get '/articles/:article_id' do
+  param 'article_id' do
+    from :get, '/articles' do |articles|
+      articles.first[:id]
     end
   end
 end
 
+post '/articles' do
+  param 'title', 'hello'
+  param 'text', 'Hello, world!'
+end
