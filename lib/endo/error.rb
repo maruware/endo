@@ -1,0 +1,1 @@
+require 'endo/error/http_error'
