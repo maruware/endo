@@ -9,18 +9,22 @@ module Endo
     def exec(endo_file=nil)
       if endo_file.nil?
         Dir.glob('endo/*.endo').each do |f|
-          executor = Endo::Core.new
-          executor.instance_eval File.read(f)
+          exec_proc(f)
         end
       else
-        executor = Endo::Core.new
-        executor.instance_eval File.read(endo_file)
+        exec_proc(endo_file)
       end
     end
 
     desc "version", "Print version"
     def version
       puts "endo version #{Endo::VERSION}"
+    end
+
+    private
+    def exec_proc(file_path)
+      executor = Endo::Core.new
+      executor.instance_eval File.read(file_path)
     end
   end
 end
