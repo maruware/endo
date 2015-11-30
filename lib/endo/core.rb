@@ -37,18 +37,21 @@ module Endo
     end
 
     #TODO: Limit scope
-    def from(method, endpoint, &block)
+    def from(method, endpoint, lmd=nil, &block)
       key = build_response_key(method, endpoint)
       unless @responses.has_key? key
         raise RuntimeError.new("NotFoundKey [#{key}]")
       end
 
-      unless block
+      res = @responses[key]
+      val = if lmd
+        res.instance_exec &lmd
+      elsif block
+        block.call(res)
+      else
         raise ArgumentError.new('UndefinedBlock')
       end
 
-      res = @responses[key]
-      val = block.call(res)
       unless val.is_a?(String) || val.is_a?(Integer) || val.is_a?(Numeric)
         raise RuntimeError.new('BadValueType')
       end
