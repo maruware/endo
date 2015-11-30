@@ -28,7 +28,7 @@ module Endo
         raise ArgumentError.new('DupValue')
       end
 
-      @params[key] = if val
+      @params[key.to_s] = if val
         val
       else
         block.call

@@ -3,7 +3,7 @@ set :base_url, 'http://endo-sample.maruware.com'
 get '/articles'
 
 get '/articles/:article_id' do
-  param 'article_id' do
+  param :article_id do
     from :get, '/articles' do |articles|
       articles.first[:id]
     end
@@ -11,6 +11,6 @@ get '/articles/:article_id' do
 end
 
 post '/articles' do
-  param 'title', 'hello'
-  param 'text', 'Hello, world!'
+  param :title, 'hello'
+  param :text, 'Hello, world!'
 end
