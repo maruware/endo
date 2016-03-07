@@ -11,30 +11,27 @@ ex. endo/sample.endo
 ```ruby
 set :base_url, 'http://endo-sample.maruware.com'
 
-get '/articles'
-
-get '/articles/:article_id' do
-  param 'article_id' do
-    from :get, '/articles' do |articles|
-      articles.first[:id]
-    end
-  end
+get '/articles' do
+  expect(body: ->{ at(0)[:title] }).to eq 'good'
 end
 
-post '/articles' do
-  param 'title', 'hello'
-  param 'text', 'Hello, world!'
+get '/articles/:article_id' do
+  param :article_id do
+    from :get, '/articles', ->{ first[:id] }
+  end
+
+  expect(header: 'Content-Type').to eq 'application/json; charset=utf-8'
+end
+
+post '/articless' do
+  param :title, 'hello'
+  param :text, 'Hello, world!'
 end
 ```
 
 Exec endo command.
 
-```
-$ endo exec endo/sample.endo
-🍺 /articles [142ms]
-🍺 /articles/1 [31ms]
-🍺 /articles [28ms]
-```
+![2016-03-07 21 24 08](https://cloud.githubusercontent.com/assets/1129887/13569450/7d9a796a-e4ab-11e5-9ab0-e52eef36ea0f.png)
 
 ## Installation
 
