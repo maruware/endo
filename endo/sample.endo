@@ -1,16 +1,18 @@
 set :base_url, 'http://endo-sample.maruware.com'
 
-get '/articles'
+get '/articles' do
+  expect(body: ->{ at(0)[:title] }).to eq 'good'
+end
 
 get '/articles/:article_id' do
   param :article_id do
-    from :get, '/articles' do |articles|
-      articles.first[:id]
-    end
+    from :get, '/articles', ->{ first[:id] }
   end
+
+  expect(header: 'Content-Type').to eq 'application/json; charset=utf-8'
 end
 
-post '/articles' do
+post '/articless' do
   param :title, 'hello'
   param :text, 'Hello, world!'
 end
