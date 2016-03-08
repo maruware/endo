@@ -2,6 +2,8 @@ set :base_url, 'http://endo-sample.maruware.com'
 
 get '/articles' do
   expect(body: ->{ at(0)[:title] }).to eq 'good'
+  expect(body: ->{ at(1)[:title] }).to include 'b'
+  expect(body: ->{ map{|e| e[:id]} }).to include 2
 end
 
 get '/articles/:article_id' do
