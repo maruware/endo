@@ -75,6 +75,12 @@ module Endo
       val
     end
 
+    def basic_auth(user, pass)
+      @basic_auth = {
+        user: user, pass: pass
+      }
+    end
+
     private
     def request(endpoint, method, &block)
       org_endpoint = endpoint.clone
@@ -146,6 +152,10 @@ module Endo
       when :put
         uri.query = URI.encode_www_form(params)
         req = Net::HTTP::Put.new uri
+      end
+
+      if @basic_auth
+        req.basic_auth @basic_auth[:user], @basic_auth[:pass]
       end
 
       res = Net::HTTP.start(uri.host, uri.port) {|http| http.request req }
