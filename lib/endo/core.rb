@@ -26,6 +26,18 @@ module Endo
       request(endpoint, :post, &block)
     end
 
+    def delete(endpoint, &block)
+      request(endpoint, :delete, &block)
+    end
+
+    def patch(endpoint, &block)
+      request(endpoint, :patch, &block)
+    end
+
+    def put(endpoint, &block)
+      request(endpoint, :put, &block)
+    end
+
     #TODO: 制限
     def param(key, val=nil, &block)
       unless (!val.nil?) ^ (!block.nil?) # Only either one
@@ -83,12 +95,12 @@ module Endo
         res_data = parse_body_json(res)
         @responses[build_response_key(method, endpoint)] = res_data
         validate_expects(res) unless @expect_alls.empty? && @expects.empty?
-        message = "🍺 #{endpoint} [#{t_end-t_start}ms]"
+        message = "🍺 #{method.upcase} #{endpoint} [#{t_end-t_start}ms]"
       rescue Error::HttpError=>e
-        message = "💩 #{endpoint} [code: #{e.code}]".red
+        message = "💩 #{method.upcase} #{endpoint} [code: #{e.code}]".red
         exit 1
       rescue Error::ValidationError => e
-        message = "👮 #{endpoint} [expected: \"#{e.expected}\" actual: \"#{e.actual}\"]".yellow
+        message = "👮 #{method.upcase} #{endpoint} [expected: \"#{e.expected}\" actual: \"#{e.actual}\"]".yellow
       ensure
         puts message
       end
@@ -117,13 +129,23 @@ module Endo
     def http_request(url, params, method: :get)
       uri = URI.parse url
 
-      req = if method == :get
+      req = case method
+      when :get
         uri.query = URI.encode_www_form(params)
-        req = Net::HTTP::Get.new uri
-      elsif method == :post
+        Net::HTTP::Get.new uri
+      when :post
         req = Net::HTTP::Post.new uri.path
         req.set_form_data(params)
         req
+      when :delete
+        uri.query = URI.encode_www_form(params)
+        req = Net::HTTP::Delete.new uri
+      when :patch
+        uri.query = URI.encode_www_form(params)
+        req = Net::HTTP::Patch.new uri
+      when :put
+        uri.query = URI.encode_www_form(params)
+        req = Net::HTTP::Put.new uri
       end
 
       res = Net::HTTP.start(uri.host, uri.port) {|http| http.request req }
@@ -133,7 +155,7 @@ module Endo
     end
 
     def parse_body_json(res)
-      JSON.parse(res.body, symbolize_names: true)
+      JSON.parse(res.body, symbolize_names: true) if res.body
     end
 
     def build_response_key(method, endpoint)
