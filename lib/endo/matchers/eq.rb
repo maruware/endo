@@ -4,9 +4,10 @@ module Endo
       attr_reader :expected
 
       private
-        def match(expected, actual)
-          actual == expected
-        end
+
+      def match(expected, actual)
+        actual == expected
+      end
     end
   end
 end

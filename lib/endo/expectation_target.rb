@@ -12,21 +12,18 @@ module Endo
     end
 
     def matches?(res)
-      @actual = case @target
+      case @target
       when :header
-        res.header[@query]
+        @actual = res.header[@query]
       when :body
         obj = JSON.parse res.body, symbolize_names: true
-        obj.instance_exec(&@query)
+        @actual = obj.instance_exec(&@query)
       end
       @matcher.matches?(@actual)
     end
 
-
     def expected
       @matcher.expected
     end
-
-
   end
 end
