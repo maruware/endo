@@ -75,6 +75,9 @@ module Endo
       begin
         res_obj, duration_ms = request_proc(endpoint, method, &block)
         message = "🍺 #{method.upcase} #{endpoint} [#{duration_ms}ms]"
+      rescue Errno::ECONNREFUSED => e
+        message = "💀 #{e.message}".red
+        exit 1
       rescue Error::HttpError => e
         message = "💩 #{method.upcase} #{endpoint} [code: #{e.code}]".red
         exit 1
