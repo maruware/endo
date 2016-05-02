@@ -8,7 +8,7 @@ module Endo
     desc "exec usage", "exec desc"
     def exec(endo_file=nil)
       if endo_file.nil?
-        Dir.glob('endo/*.endo').each do |f|
+        Dir.glob('endo/*.rb').each do |f|
           exec_proc(f)
         end
       else
