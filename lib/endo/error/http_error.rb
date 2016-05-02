@@ -1,4 +1,3 @@
-
 module Endo
   module Error
     class HttpError < StandardError
@@ -9,7 +8,6 @@ module Endo
         @code = code
         @body = body
       end
-
     end
   end
 end
