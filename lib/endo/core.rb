@@ -14,7 +14,7 @@ module Endo
     end
 
     def set(key, val)
-      #TODO: validate key
+      # TODO: validate key
       @props[key] = val
     end
 
@@ -38,38 +38,30 @@ module Endo
       request(endpoint, :put, &block)
     end
 
-    #TODO: 制限
-    def param(key, val=nil, &block)
-      unless (!val.nil?) ^ (!block.nil?) # Only either one
-        raise ArgumentError.new('DupValue')
-      end
+    # TODO: 制限
+    def param(key, val = nil)
+      raise ArgumentError, 'DupValue' unless !val.nil? ^ block_given?
 
-      @params[key.to_s] = if val
-        val
-      else
-        block.call
-      end
-
+      @params[key.to_s] = val ? val : yield
     end
 
-    #TODO: Limit scope
-    def from(method, endpoint, lmd=nil, &block)
+    # TODO: Limit scope
+    def from(method, endpoint, lmd = nil, &_block)
       key = build_response_key(method, endpoint)
-      unless @responses.has_key? key
-        raise RuntimeError.new("NotFoundKey [#{key}]")
-      end
+      raise RuntimeError "NotFoundKey [#{key}]" unless @responses.key? key
 
       res = @responses[key]
-      val = if lmd
-        res.instance_exec &lmd
-      elsif block
-        block.call(res)
+      val = nil
+      if !lmd.nil?
+        val = res.instance_exec(&lmd)
+      elsif block_given?
+        val = yield res
       else
-        raise ArgumentError.new('UndefinedBlock')
+        raise ArgumentError, 'UndefinedBlock'
       end
 
       unless val.is_a?(String) || val.is_a?(Integer) || val.is_a?(Numeric)
-        raise RuntimeError.new('BadValueType')
+        raise 'BadValueType'
       end
 
       val
@@ -82,27 +74,27 @@ module Endo
     end
 
     private
-    def request(endpoint, method, &block)
-      org_endpoint = endpoint.clone
+
+    def request(endpoint, method, &_block)
 
       @params = {}
       @expects = []
-      block.call if block
+      yield if block_given?
 
       endpoint = apply_pattern_vars(endpoint, @params)
 
       url = @props[:base_url] + endpoint
 
       begin
-        t_start = Time.now.instance_eval { self.to_i * 1000 + (usec/1000) }
+        t_start = Time.now.instance_eval { to_i * 1000 + (usec / 1000) }
         res = http_request(url, @params, method: method)
-        t_end = Time.now.instance_eval { self.to_i * 1000 + (usec/1000) }
+        t_end = Time.now.instance_eval { to_i * 1000 + (usec / 1000) }
 
         res_data = parse_body_json(res)
         @responses[build_response_key(method, endpoint)] = res_data
         validate_expects(res) unless @expect_alls.empty? && @expects.empty?
-        message = "🍺 #{method.upcase} #{endpoint} [#{t_end-t_start}ms]"
-      rescue Error::HttpError=>e
+        message = "🍺 #{method.upcase} #{endpoint} [#{t_end - t_start}ms]"
+      rescue Error::HttpError => e
         message = "💩 #{method.upcase} #{endpoint} [code: #{e.code}]".red
         exit 1
       rescue Error::ValidationError => e
@@ -110,7 +102,6 @@ module Endo
       ensure
         puts message
       end
-
     end
 
     def apply_pattern_vars(endpoint, params)
@@ -118,9 +109,7 @@ module Endo
       if patterns.any?
         patterns.flatten!
         patterns.each do |pattern|
-          unless params.has_key? pattern
-            raise RuntimeError.new("NotFoundPattern #{pattern}")
-          end
+          raise "NotFoundPattern #{pattern}" unless params.key? pattern
 
           endpoint.sub!(/:#{pattern}/, params[pattern].to_s)
         end
@@ -135,10 +124,10 @@ module Endo
     def http_request(url, params, method: :get)
       uri = URI.parse url
 
-      req = case method
+      case method
       when :get
         uri.query = URI.encode_www_form(params)
-        Net::HTTP::Get.new uri
+        req = Net::HTTP::Get.new uri
       when :post
         req = Net::HTTP::Post.new uri.path
         req.set_form_data(params)
@@ -158,10 +147,10 @@ module Endo
         req.basic_auth @basic_auth[:user], @basic_auth[:pass]
       end
 
-      res = Net::HTTP.start(uri.host, uri.port) {|http| http.request req }
+      res = Net::HTTP.start(uri.host, uri.port) { |http| http.request req }
       raise Error::HttpError.new("HTTP Bad Status[#{res.code}] #{res.body}", res.code, res.body) unless /^20[0-8]$/ =~ res.code
 
-      return res
+      res
     end
 
     def parse_body_json(res)
@@ -173,15 +162,15 @@ module Endo
     end
 
     def expect(header: nil, body: nil)
-      expectation = if header
-        ExpectationTarget.new(:header, header)
-      elsif(body)
-        ExpectationTarget.new(:body, body)
+      if header
+        expectation = ExpectationTarget.new(:header, header)
+      elsif body
+        expectation = ExpectationTarget.new(:body, body)
       else
         raise 'TODO'
       end
       @expects << expectation
-      return expectation
+      expectation
     end
 
     def validate_expects(res)
@@ -191,6 +180,5 @@ module Endo
         end
       end
     end
-
   end
 end
