@@ -1,37 +1,38 @@
 # endo
 
-This is a tool for testing api endpoints.
-In development state.
+This is a tool for testing json api endpoints.
 
 # Usage
 
 Write endo file.
-ex. endo/sample.endo
+ex. endo/sample.rb
 
 ```ruby
-set :base_url, 'http://endo-sample.maruware.com'
+set :base_url, 'http://localhost:3000'
+basic_auth 'user', 'pass'
 
 get '/articles' do
-  expect(body: ->{ at(0)[:title] }).to eq 'good'
+  expect(header: 'Content-Type').to eq 'application/json; charset=utf-8'
+end
+
+post '/articles.json' do
+  param 'article[title]', 'hello'
+  param 'article[content]', 'Hello, world!'
 end
 
 get '/articles/:article_id' do
   param :article_id do
-    from :get, '/articles', ->{ first[:id] }
+    from :post, '/articles.json', -> { self[:id] }
   end
 
-  expect(header: 'Content-Type').to eq 'application/json; charset=utf-8'
-end
-
-post '/articless' do
-  param :title, 'hello'
-  param :text, 'Hello, world!'
+  expect(header: 'Content-Type').to eq 'application/json'
+  expect(body: -> { self[:title] }).to eq 'hello'
 end
 ```
 
 Exec endo command.
 
-![2016-03-07 21 24 08](https://cloud.githubusercontent.com/assets/1129887/13569450/7d9a796a-e4ab-11e5-9ab0-e52eef36ea0f.png)
+![ss_ 2016-05-02 16 12 58](https://cloud.githubusercontent.com/assets/1129887/14948974/f20798cc-1080-11e6-8b0d-90679c26b44e.png)
 
 ## Installation
 
