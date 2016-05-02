@@ -9,7 +9,6 @@ module Endo
         @expected = expected
         @actual = actual
       end
-
     end
   end
 end
