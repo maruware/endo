@@ -9,7 +9,6 @@ module Endo
 
     def initialize
       @responses = {}
-      @expect_alls = {}
     end
 
     def get(endpoint, &block)
@@ -32,17 +31,16 @@ module Endo
       request(endpoint, :put, &block)
     end
 
-    # TODO: 制限
+    # TODO: Limit scope
     def param(key, val = nil)
       raise ArgumentError, 'DupValue' unless !val.nil? ^ block_given?
-
       @params[key.to_s] = val ? val : yield
     end
 
     # TODO: Limit scope
     def from(method, endpoint, lmd = nil, &_block)
       key = build_response_key(method, endpoint)
-      raise RuntimeError "NotFoundKey [#{key}]" unless @responses.key? key
+      raise "NotFoundKey [#{key}]" unless @responses.key? key
 
       res = @responses[key]
       val = nil
@@ -78,12 +76,12 @@ module Endo
       @expects = []
       yield if block_given?
 
-      endpoint = apply_pattern_vars(endpoint, @params)
+      endpoint = apply_params_to_pattern(endpoint, @params)
       url = @base_url + endpoint
 
       begin
         res, time_ms = request_with_timer(url, method, @params)
-        validate_expects(res) unless @expect_alls.empty? && @expects.empty?
+        validate_expects(res) if @expects.any?
         @responses[build_response_key(method, endpoint)] = parse_body_json(res)
 
         message = "🍺 #{method.upcase} #{endpoint} [#{time_ms}ms]"
@@ -97,13 +95,12 @@ module Endo
       end
     end
 
-    def apply_pattern_vars(endpoint, params)
+    def apply_params_to_pattern(endpoint, params)
       patterns = endpoint.scan(/:(\w+)/)
       if patterns.any?
         patterns.flatten!
         patterns.each do |pattern|
           raise "NotFoundPattern #{pattern}" unless params.key? pattern
-
           endpoint.sub!(/:#{pattern}/, params[pattern].to_s)
         end
 
@@ -164,12 +161,14 @@ module Endo
     end
 
     def expect(header: nil, body: nil)
+      unless !header.nil? ^ !body.nil?
+        raise ArgumentError, '"expect" must be called with header or body'
+      end
+
       if header
         expectation = ExpectationTarget.new(:header, header)
       elsif body
         expectation = ExpectationTarget.new(:body, body)
-      else
-        raise 'TODO'
       end
       @expects << expectation
       expectation
