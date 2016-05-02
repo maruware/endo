@@ -25,7 +25,7 @@ module Endo
 
     def exec_proc(file_path)
       executor = Endo::Core.new
-      executor.instance_eval File.read(file_path)
+      executor.instance_eval(File.read(file_path), file_path)
     end
   end
 end
