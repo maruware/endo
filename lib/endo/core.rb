@@ -76,24 +76,19 @@ module Endo
     private
 
     def request(endpoint, method, &_block)
-
       @params = {}
       @expects = []
       yield if block_given?
 
       endpoint = apply_pattern_vars(endpoint, @params)
-
       url = @props[:base_url] + endpoint
 
       begin
-        t_start = Time.now.instance_eval { to_i * 1000 + (usec / 1000) }
-        res = http_request(url, @params, method: method)
-        t_end = Time.now.instance_eval { to_i * 1000 + (usec / 1000) }
-
-        res_data = parse_body_json(res)
-        @responses[build_response_key(method, endpoint)] = res_data
+        res, time_ms = request_with_timer(url, method, @params)
         validate_expects(res) unless @expect_alls.empty? && @expects.empty?
-        message = "🍺 #{method.upcase} #{endpoint} [#{t_end - t_start}ms]"
+        @responses[build_response_key(method, endpoint)] = parse_body_json(res)
+
+        message = "🍺 #{method.upcase} #{endpoint} [#{time_ms}ms]"
       rescue Error::HttpError => e
         message = "💩 #{method.upcase} #{endpoint} [code: #{e.code}]".red
         exit 1
@@ -121,36 +116,47 @@ module Endo
       endpoint
     end
 
+    def request_with_timer(url, method, params)
+      t_start = Time.now.instance_eval { to_i * 1000 + (usec / 1000) }
+      res = http_request(url, params, method: method)
+      t_end = Time.now.instance_eval { to_i * 1000 + (usec / 1000) }
+
+      [res, t_end - t_start]
+    end
+
     def http_request(url, params, method: :get)
       uri = URI.parse url
+      req = create_request_each_method(uri, params, method)
 
+      if @basic_auth
+        req.basic_auth @basic_auth[:user], @basic_auth[:pass]
+      end
+
+      res = Net::HTTP.start(uri.host, uri.port) { |http| http.request(req) }
+      raise Error::HttpError.new("HTTP Bad Status[#{res.code}] #{res.body}", res.code, res.body) unless /^20[0-8]$/ =~ res.code
+
+      res
+    end
+
+    def create_request_each_method(uri, params, method)
       case method
       when :get
         uri.query = URI.encode_www_form(params)
-        req = Net::HTTP::Get.new uri
+        Net::HTTP::Get.new uri
       when :post
         req = Net::HTTP::Post.new uri.path
         req.set_form_data(params)
         req
       when :delete
         uri.query = URI.encode_www_form(params)
-        req = Net::HTTP::Delete.new uri
+        Net::HTTP::Delete.new uri
       when :patch
         uri.query = URI.encode_www_form(params)
-        req = Net::HTTP::Patch.new uri
+        Net::HTTP::Patch.new uri
       when :put
         uri.query = URI.encode_www_form(params)
-        req = Net::HTTP::Put.new uri
+        Net::HTTP::Put.new uri
       end
-
-      if @basic_auth
-        req.basic_auth @basic_auth[:user], @basic_auth[:pass]
-      end
-
-      res = Net::HTTP.start(uri.host, uri.port) { |http| http.request req }
-      raise Error::HttpError.new("HTTP Bad Status[#{res.code}] #{res.body}", res.code, res.body) unless /^20[0-8]$/ =~ res.code
-
-      res
     end
 
     def parse_body_json(res)
