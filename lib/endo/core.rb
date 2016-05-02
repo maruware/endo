@@ -11,6 +11,16 @@ module Endo
       @responses = {}
     end
 
+    def base_url(url)
+      @base_url = url
+    end
+
+    def basic_auth(user, pass)
+      @basic_auth = {
+        user: user, pass: pass
+      }
+    end
+
     def get(endpoint, &block)
       request(endpoint, :get, &block)
     end
@@ -59,32 +69,12 @@ module Endo
       val
     end
 
-    def base_url(url)
-      @base_url = url
-    end
-
-    def basic_auth(user, pass)
-      @basic_auth = {
-        user: user, pass: pass
-      }
-    end
-
     private
 
-    def request(endpoint, method, &_block)
-      @params = {}
-      @expects = []
-      yield if block_given?
-
-      endpoint = apply_params_to_pattern(endpoint, @params)
-      url = @base_url + endpoint
-
+    def request(endpoint, method, &block)
       begin
-        res, time_ms = request_with_timer(url, method, @params)
-        validate_expects(res) if @expects.any?
-        @responses[build_response_key(method, endpoint)] = parse_body_json(res)
-
-        message = "🍺 #{method.upcase} #{endpoint} [#{time_ms}ms]"
+        res_obj, duration_ms = request_proc(endpoint, method, &block)
+        message = "🍺 #{method.upcase} #{endpoint} [#{duration_ms}ms]"
       rescue Error::HttpError => e
         message = "💩 #{method.upcase} #{endpoint} [code: #{e.code}]".red
         exit 1
@@ -95,20 +85,21 @@ module Endo
       end
     end
 
-    def apply_params_to_pattern(endpoint, params)
-      patterns = endpoint.scan(/:(\w+)/)
-      if patterns.any?
-        patterns.flatten!
-        patterns.each do |pattern|
-          raise "NotFoundPattern #{pattern}" unless params.key? pattern
-          endpoint.sub!(/:#{pattern}/, params[pattern].to_s)
-        end
+    def request_proc(endpoint, method, &_block)
+      @params = {}
+      @expects = []
+      yield if block_given?
 
-        patterns.uniq.each do |pattern|
-          params.delete(pattern)
-        end
-      end
-      endpoint
+      endpoint = apply_params_to_pattern(endpoint, @params)
+      url = @base_url + endpoint
+
+      res, duration_ms = request_with_timer(url, method, @params)
+      validate_expects(res) if @expects.any?
+
+      res_obj = parse_body_json(res)
+      @responses[build_response_key(method, endpoint)] = parse_body_json(res)
+
+      [res_obj, duration_ms]
     end
 
     def request_with_timer(url, method, params)
@@ -158,6 +149,22 @@ module Endo
 
     def build_response_key(method, endpoint)
       "#{method}:#{endpoint}"
+    end
+
+    def apply_params_to_pattern(endpoint, params)
+      patterns = endpoint.scan(/:(\w+)/)
+      if patterns.any?
+        patterns.flatten!
+        patterns.each do |pattern|
+          raise "NotFoundPattern #{pattern}" unless params.key? pattern
+          endpoint.sub!(/:#{pattern}/, params[pattern].to_s)
+        end
+
+        patterns.uniq.each do |pattern|
+          params.delete(pattern)
+        end
+      end
+      endpoint
     end
 
     def expect(header: nil, body: nil)
