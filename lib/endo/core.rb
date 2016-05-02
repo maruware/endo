@@ -8,14 +8,8 @@ module Endo
     include Endo::Matchers
 
     def initialize
-      @props = {}
       @responses = {}
       @expect_alls = {}
-    end
-
-    def set(key, val)
-      # TODO: validate key
-      @props[key] = val
     end
 
     def get(endpoint, &block)
@@ -67,6 +61,10 @@ module Endo
       val
     end
 
+    def base_url(url)
+      @base_url = url
+    end
+
     def basic_auth(user, pass)
       @basic_auth = {
         user: user, pass: pass
@@ -81,7 +79,7 @@ module Endo
       yield if block_given?
 
       endpoint = apply_pattern_vars(endpoint, @params)
-      url = @props[:base_url] + endpoint
+      url = @base_url + endpoint
 
       begin
         res, time_ms = request_with_timer(url, method, @params)
@@ -128,9 +126,7 @@ module Endo
       uri = URI.parse url
       req = create_request_each_method(uri, params, method)
 
-      if @basic_auth
-        req.basic_auth @basic_auth[:user], @basic_auth[:pass]
-      end
+      req.basic_auth @basic_auth[:user], @basic_auth[:pass] if @basic_auth
 
       res = Net::HTTP.start(uri.host, uri.port) { |http| http.request(req) }
       raise Error::HttpError.new("HTTP Bad Status[#{res.code}] #{res.body}", res.code, res.body) unless /^20[0-8]$/ =~ res.code

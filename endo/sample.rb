@@ -1,4 +1,4 @@
-set :base_url, 'http://localhost:3000'
+base_url 'http://localhost:3000'
 basic_auth 'user', 'pass'
 
 get '/articles' do
