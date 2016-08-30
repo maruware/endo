@@ -1,11 +1,11 @@
 require 'endo/matchers/base_matcher'
-require 'endo/matchers/eq'
+require 'endo/matchers/equal'
 require 'endo/matchers/include'
 
 module Endo
   module Matchers
-    def eq(expected)
-      Matchers::Eq.new(expected)
+    def equal(expected)
+      Matchers::Equal.new(expected)
     end
 
     def include(expected)

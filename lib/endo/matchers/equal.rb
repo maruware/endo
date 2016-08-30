@@ -1,6 +1,6 @@
 module Endo
   module Matchers
-    class Eq < BaseMatcher
+    class Equal < BaseMatcher
       attr_reader :expected
 
       private

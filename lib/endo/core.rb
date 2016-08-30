@@ -2,6 +2,7 @@ require 'open-uri'
 require 'json'
 require 'net/http'
 require 'colorize'
+require 'ruby_dig'
 
 module Endo
   class Core
@@ -48,19 +49,27 @@ module Endo
     end
 
     # TODO: Limit scope
-    def from(method, endpoint, lmd = nil, &_block)
+    def from(method, endpoint, prop = nil, &_block)
       key = build_response_key(method, endpoint)
       raise "NotFoundKey [#{key}]" unless @responses.key? key
 
       res = @responses[key]
-      val = nil
-      if !lmd.nil?
-        val = res.instance_exec(&lmd)
-      elsif block_given?
-        val = yield res
-      else
-        raise ArgumentError, 'UndefinedBlock'
-      end
+
+      val = if !prop.nil?
+              if prop.is_a?(String)
+                res[prop]
+              elsif prop.is_a?(Array)
+                res.dig(*prop)
+              elsif prop.is_a?(Proc)
+                res.instance_exec(&prop)
+              else
+                raise ArgumentError, 'BadPropType'
+              end
+            elsif block_given?
+              yield res
+            else
+              raise ArgumentError, 'UndefinedBlock'
+            end
 
       unless val.is_a?(String) || val.is_a?(Integer) || val.is_a?(Numeric)
         raise 'BadValueType'
@@ -147,7 +156,7 @@ module Endo
     end
 
     def parse_body_json(res)
-      JSON.parse(res.body, symbolize_names: true) if res.body
+      JSON.parse(res.body) if res.body
     end
 
     def build_response_key(method, endpoint)

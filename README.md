@@ -12,7 +12,7 @@ base_url 'http://localhost:3000'
 basic_auth 'user', 'pass'
 
 get '/articles' do
-  expect(header: 'Content-Type').to eq 'application/json; charset=utf-8'
+  expect(header: 'Content-Type').to equal 'application/json; charset=utf-8'
 end
 
 post '/articles.json' do
@@ -22,11 +22,11 @@ end
 
 get '/articles/:article_id' do
   param :article_id do
-    from :post, '/articles.json', -> { self[:id] }
+    from :post, '/articles.json', 'id'
   end
 
-  expect(header: 'Content-Type').to eq 'application/json'
-  expect(body: -> { self[:title] }).to eq 'hello'
+  expect(header: 'Content-Type').to equal 'application/json'
+  expect(body: 'title' }).to equal 'hello'
 end
 ```
 

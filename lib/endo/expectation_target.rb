@@ -16,8 +16,12 @@ module Endo
       when :header
         @actual = res.header[@query]
       when :body
-        obj = JSON.parse res.body, symbolize_names: true
-        @actual = obj.instance_exec(&@query)
+        obj = JSON.parse res.body
+        @actual = if @query.is_a? Proc
+                    obj.instance_exec(&@query)
+                  else
+                    obj[@query]
+                  end
       end
       @matcher.matches?(@actual)
     end
